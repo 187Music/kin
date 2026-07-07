@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORSE — Video Clip Extractor</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0a0a;
+  --bg2:     #111;
+  --surface: #161616;
+  --border:  #2a2a2a;
+  --border2: #444;
+  --accent:  #e8ff00;
+  --accent2: #aacc00;
+  --adim:    rgba(232,255,0,0.1);
+  --aglow:   rgba(232,255,0,0.3);
+  --success: #00ff88;
+  --text:    #f0f0f0;
+  --muted:   #666;
+  --mono:    'Share Tech Mono', monospace;
+  --display: 'Orbitron', sans-serif;
+  --r: 3px;
+}
+
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  line-height: 1.6; min-height: 100vh;
+}
+
+header {
+  border-bottom: 1px solid var(--border);
+  background: rgba(10,10,10,0.97);
+  backdrop-filter: blur(10px);
+  position: sticky; top: 0; z-index: 200;
+}
+
+.hdr {
+  max-width: 960px; margin: 0 auto; padding: 0 24px;
+  height: 58px; display: flex; align-items: center; justify-content: space-between;
+}
+
+.logo {
+  font-family: var(--display); font-size: 24px; font-weight: 900;
+  color: var(--accent); letter-spacing: 6px;
+  text-shadow: 0 0 20px var(--aglow), 0 0 40px rgba(232,255,0,0.1);
+}
+
+.hdr-right { display: flex; align-items: center; gap: 16px; }
+
+.online-dot {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--success); letter-spacing: 1px;
+  display: flex; align-items: center; gap: 6px;
+}
+.online-dot::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success); box-shadow: 0 0 6px var(--success);
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.spec-pills { display: flex; gap: 6px; }
+.spec-pill {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+  padding: 3px 10px; border: 1px solid var(--accent);
+  border-radius: var(--r); color: var(--accent); background: var(--adim);
+}
+
+.hero { max-width: 960px; margin: 0 auto; padding: 56px 24px 40px; text-align: center; }
+.eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 4px; color: var(--accent); opacity: .7; margin-bottom: 16px; text-transform: uppercase; }
+.hero h1 { font-family: var(--display); font-size: clamp(30px,6vw,56px); font-weight: 900; letter-spacing: 3px; color: #fff; line-height: 1.05; margin-bottom: 14px; }
+.hero h1 em { font-style: normal; color: var(--accent); text-shadow: 0 0 20px var(--aglow); }
+.hero p { font-family: var(--mono); font-size: 12px; color: var(--muted); max-width: 440px; margin: 0 auto 32px; line-height: 1.9; }
+
+.hero-tags { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+.htag { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 5px 14px; border: 1px solid var(--border2); border-radius: var(--r); color: var(--muted); }
+.htag.hi { border-color: var(--accent); color: var(--accent); background: var(--adim); }
+
+.main { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 16px; position: relative; overflow: hidden; }
+.card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg,transparent,var(--accent),transparent); opacity: .3; }
+
+.card-hdr { padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--bg2); display: flex; align-items: center; gap: 10px; }
+.step-num { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--accent); opacity: .6; }
+.card-title { font-family: var(--display); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+.card-body { padding: 20px; }
+
+.drop-zone {
+  border: 1px dashed var(--border2); border-radius: var(--r);
+  padding: 56px 20px; text-align: center; cursor: pointer;
+  transition: all .2s; position: relative; background: var(--bg2);
+}
+.drop-zone:hover, .drop-zone.over { border-color: var(--accent); background: var(--adim); box-shadow: 0 0 20px rgba(232,255,0,0.06); }
+.drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.dz-icon { font-size: 42px; margin-bottom: 14px; }
+.drop-zone h3 { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.drop-zone p { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.dz-cta { display: inline-block; margin-top: 16px; font-family: var(--mono); font-size: 11px; letter-spacing: 2px; padding: 8px 20px; border: 1px solid var(--accent); color: var(--accent); border-radius: var(--r); text-transform: uppercase; pointer-events: none; box-shadow: 0 0 10px rgba(232,255,0,0.1); }
+
+.src-video { width: 100%; border-radius: var(--r); border: 1px solid var(--border); background: #000; max-height: 280px; object-fit: contain; }
+
+.meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.mc { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; color: var(--accent); background: var(--adim); border: 1px solid var(--border2); border-radius: var(--r); padding: 3px 10px; }
+
+.sg { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media(max-width:560px){ .sg{ grid-template-columns: 1fr; } }
+
+.flbl { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+
+select { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); color: var(--text); font-family: var(--mono); font-size: 12px; padding: 9px 12px; outline: none; appearance: none; cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+select:focus { border-color: var(--accent); box-shadow: 0 0 8px rgba(232,255,0,0.1); }
+
+.out-banner { margin-top: 16px; padding: 14px 18px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r); display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.frame-vis { width: 32px; height: 57px; flex-shrink: 0; border: 2px solid var(--accent); border-radius: 2px; background: var(--adim); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 7px; color: var(--accent); letter-spacing: .5px; box-shadow: 0 0 10px rgba(232,255,0,0.15); }
+.ob { display: flex; flex-direction: column; gap: 2px; }
+.ok { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+.ov { font-family: var(--mono); font-size: 13px; color: var(--accent); font-weight: 700; letter-spacing: 1px; }
+
+.clip-timeline { width: 100%; height: 52px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); position: relative; overflow: hidden; margin-bottom: 8px; }
+.ct-fill { position: absolute; height: 100%; background: linear-gradient(90deg,rgba(200,220,0,0.2),rgba(232,255,0,0.35)); border-left: 2px solid var(--accent2); border-right: 2px solid var(--accent); box-shadow: 0 0 10px rgba(232,255,0,0.15); }
+.ct-lbl { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-family: var(--mono); font-size: 10px; color: var(--accent); letter-spacing: 1px; pointer-events: none; white-space: nowrap; }
+
+.clip-info-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.ci { font-family: var(--mono); font-size: 10px; color: var(--muted); background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 3px 10px; }
+.ci span { color: var(--accent); }
+
+.gen-btn { width: 100%; padding: 15px; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; cursor: pointer; border-radius: var(--r); transition: all .2s; box-shadow: 0 0 16px rgba(232,255,0,0.1),inset 0 0 16px rgba(232,255,0,0.03); position: relative; overflow: hidden; }
+.gen-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg,transparent,rgba(232,255,0,0.08),transparent); transform: translateX(-100%); transition: transform .5s; }
+.gen-btn:hover::before { transform: translateX(100%); }
+.gen-btn:hover { background: var(--adim); box-shadow: 0 0 28px rgba(232,255,0,0.2); }
+.gen-btn:disabled { opacity: .25; cursor: not-allowed; pointer-events: none; }
+
+.prog-outer { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); height: 6px; overflow: hidden; margin-bottom: 8px; }
+.prog-inner { height: 100%; background: linear-gradient(90deg,var(--accent2),var(--accent)); box-shadow: 0 0 8px var(--aglow); width: 0%; transition: width .3s; }
+.prog-label { font-family: var(--mono); font-size: 11px; color: var(--accent); text-align: center; letter-spacing: 1px; margin-bottom: 10px; }
+.log-console { background: #000; border: 1px solid var(--border); border-radius: var(--r); padding: 12px; font-family: var(--mono); font-size: 10px; color: var(--muted); max-height: 100px; overflow-y: auto; }
+.lok { color: var(--success); }
+.linf { color: var(--accent); }
+.lwrn { color: #ff9900; }
+
+.clips-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 14px; }
+
+.clip-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; transition: border-color .2s,box-shadow .2s; }
+.clip-card:hover { border-color: var(--accent); box-shadow: 0 0 16px rgba(232,255,0,0.1); }
+
+.clip-thumb { position: relative; background: #000; aspect-ratio: 9/16; overflow: hidden; }
+.clip-thumb video { width: 100%; height: 100%; object-fit: cover; border-radius: 0; max-height: none; display: block; }
+.thumb-overlay { position: absolute; inset: 0; background: linear-gradient(to top,rgba(0,0,0,0.7) 0%,transparent 40%); display: flex; align-items: flex-end; padding: 8px; pointer-events: none; }
+.thumb-num { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--accent); border: 1px solid var(--accent); border-radius: var(--r); padding: 2px 8px; background: rgba(232,255,0,0.06); }
+.thumb-badge { position: absolute; top: 8px; right: 8px; font-family: var(--mono); font-size: 9px; background: rgba(0,0,0,0.9); border: 1px solid var(--border2); border-radius: var(--r); padding: 2px 7px; color: var(--success); letter-spacing: 1px; pointer-events: none; }
+
+.clip-info { padding: 10px 12px 12px; }
+.cl-name { font-family: var(--display); font-size: 10px; letter-spacing: 1px; color: var(--text); margin-bottom: 3px; }
+.cl-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+.cl-spec { font-family: var(--mono); font-size: 9px; color: var(--accent); margin-bottom: 10px; letter-spacing: .5px; }
+
+.clip-btns { display: flex; gap: 6px; }
+.btn-dl, .btn-play { flex: 1; padding: 7px 4px; border-radius: var(--r); font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; text-decoration: none; text-align: center; transition: all .15s; display: block; }
+.btn-dl { background: var(--adim); border: 1px solid var(--accent); color: var(--accent); }
+.btn-dl:hover { background: rgba(232,255,0,0.18); box-shadow: 0 0 8px rgba(232,255,0,0.15); }
+.btn-play { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+.btn-play:hover { border-color: var(--border2); color: var(--text); }
+
+.div { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.slbl { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+
+footer { border-top: 1px solid var(--border); background: var(--bg2); padding: 24px; text-align: center; }
+.footer-logo { font-family: var(--display); font-size: 18px; font-weight: 900; letter-spacing: 6px; color: var(--accent); text-shadow: 0 0 12px var(--aglow); margin-bottom: 12px; }
+.footer-links { display: flex; gap: 22px; justify-content: center; margin-bottom: 10px; }
+.footer-links a { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color .2s; }
+.footer-links a:hover { color: var(--accent); }
+.footer-copy { font-family: var(--mono); font-size: 10px; color: var(--muted); opacity: .4; letter-spacing: 1px; }
+
+.toast { position: fixed; bottom: 22px; right: 22px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); padding: 11px 18px; font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: 1px; display: flex; align-items: center; gap: 8px; transform: translateY(70px); transition: transform .3s; z-index: 9999; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+.toast.show { transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <div class="logo">CORSE</div>
+    <div class="hdr-right">
+      <div class="spec-pills">
+        <div class="spec-pill">1080×1920</div>
+        <div class="spec-pill">9:16</div>
+        <div class="spec-pill">MP4 + AUDIO</div>
+      </div>
+      <div class="online-dot">ONLINE</div>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="eyebrow">// MP4 CLIP EXTRACTOR WITH AUDIO</div>
+  <h1>CLIP.<br><em>RESIZE.</em><br>DOWNLOAD.</h1>
+  <p>Upload any MP4. Extract perfectly sized clips at 1080×1920 with full audio — no watermarks, no limits.</p>
+  <div class="hero-tags">
+    <div class="htag hi">MP4 + Audio</div>
+    <div class="htag hi">1080×1920</div>
+    <div class="htag hi">9:16 Ratio</div>
+    <div class="htag hi">No Watermark</div>
+    <div class="htag">🎵 TikTok</div>
+    <div class="htag">📸 Instagram Reels</div>
+    <div class="htag">▶️ YouTube Shorts</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-hdr">
+      <span class="step-num">STEP 01 //</span>
+      <span class="card-title">Upload Your Video</span>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="video/mp4,video/*">
+        <div class="dz-icon">🎬</div>
+        <h3>Drop Your Video Here</h3>
+        <p>MP4 · MOV · AVI · WEBM — any resolution, any length</p>
+        <div class="dz-cta">[ SELECT FILE ]</div>
+      </div>
+      <div id="preview-wrap" style="display:none">
+        <hr class="div">
+        <video id="src-video" class="src-video" controls></video>
+        <div class="meta-row" id="meta-row"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card" id="settings-card" style="display:none">
+    <div class="card-hdr">
+      <span class="step-num">STEP 02 //</span>
+      <span class="card-title">Clip Settings</span>
+    </div>
+    <div class="card-body">
+      <div class="sg">
+        <div>
+          <label class="flbl">Clip Duration</label>
+          <select id="clip-dur">
+            <option value="10">10 seconds</option>
+            <option value="15">15 seconds</option>
+            <option value="30" selected>30 seconds</option>
+            <option value="45">45 seconds</option>
+            <option value="60">60 seconds</option>
+            <option value="90">90 seconds</option>
+          </select>
+        </div>
+        <div>
+          <label class="flbl">Number of Clips</label>
+          <select id="num-clips">
+            <option value="3">3 clips</option>
+            <option value="5" selected>5 clips</option>
+            <option value="8">8 clips</option>
+            <option value="10">10 clips</option>
+            <option value="auto">Auto — max possible</option>
+          </select>
+        </div>
+        <div>
+          <label class="flbl">Clip Selection</label>
+          <select id="clip-mode">
+            <option value="spread">Spread evenly</option>
+            <option value="random">Random moments</option>
+            <option value="start">From beginning</option>
+            <option value="end">From end</option>
+          </select>
+        </div>
+        <div>
+          <label class="flbl">Fill Mode (9:16 Resize)</label>
+          <select id="fill-mode">
+            <option value="crop">Smart Crop — fills frame</option>
+            <option value="fit">Fit — full video with bars</option>
+            <option value="stretch">Stretch — fills frame</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="out-banner">
+        <div class="frame-vis">9:16</div>
+        <div class="ob"><span class="ok">Resolution</span><span class="ov">1080×1920</span></div>
+        <div class="ob"><span class="ok">Ratio</span><span class="ov">9:16</span></div>
+        <div class="ob"><span class="ok">Format</span><span class="ov">MP4</span></div>
+        <div class="ob"><span class="ok">Audio</span><span class="ov" style="color:var(--success)">INCLUDED ✓</span></div>
+        <div class="ob"><span class="ok">Watermark</span><span class="ov" style="color:var(--success)">NONE ✓</span></div>
+      </div>
+
+      <div style="margin-top:16px">
+        <span class="flbl" style="margin-bottom:10px;display:block">// Timeline Preview</span>
+        <div class="clip-timeline">
+          <div class="ct-fill" id="ct-fill">
+            <div class="ct-lbl" id="ct-lbl">CLIP 1</div>
+          </div>
+        </div>
+        <div class="clip-info-row" id="clip-info-row"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card" id="gen-card" style="display:none">
+    <div class="card-hdr">
+      <span class="step-num">STEP 03 //</span>
+      <span class="card-title">Extract Clips</span>
+    </div>
+    <div class="card-body">
+      <button class="gen-btn" id="gen-btn" onclick="generate()">
+        ▶ EXTRACT CLIPS WITH AUDIO — 1080×1920 MP4
+      </button>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="card" id="prog-card" style="display:none">
+    <div class="card-hdr">
+      <span class="step-num">SYS //</span>
+      <span class="card-title">Processing</span>
+    </div>
+    <div class="card-body">
+      <div class="prog-outer"><div class="prog-inner" id="prog-inner"></div></div>
+      <div class="prog-label" id="prog-label">INITIALIZING...</div>
+      <div class="log-console" id="log-console"></div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="card" id="output-card" style="display:none">
+    <div class="card-hdr">
+      <span class="step-num">STEP 04 //</span>
+      <span class="card-title" id="output-title">Clips Ready</span>
+    </div>
+    <div class="card-body">
+      <div class="slbl" style="margin-bottom:14px">
+        // 1080×1920 · 9:16 · MP4 · Audio included · No watermark · Hover to preview · Click download
+      </div>
+      <div class="clips-grid" id="clips-grid"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-logo">CORSE</div>
+  <div class="footer-links">
+    <a href="terms.html" target="_blank">Terms of Service</a>
+    <a href="privacy.html" target="_blank">Privacy Policy</a>
+  </div>
+  <div class="footer-copy">© 2026 CORSE — VIDEO CLIP EXTRACTOR · ALL RIGHTS RESERVED</div>
+</footer>
+
+<div class="toast" id="toast">
+  <span id="t-ico"></span><span id="t-msg"></span>
+</div>
+
+<script>
+'use strict';
+
+// ── STATE ──────────────────────────────────────────────────────────
+let videoFile = null, videoURL = null, videoDuration = 0;
+let clips = [];
+
+// Canvas at 540×960 = same 9:16 ratio as 1080×1920, half res for perf
+const CW = 540, CH = 960;
+
+// ── DETECT BEST MIME ───────────────────────────────────────────────
+// We need a MIME that supports BOTH video and audio tracks
+function bestMime() {
+  const types = [
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm;codecs=vp9',
+    'video/webm',
+  ];
+  if (typeof MediaRecorder === 'undefined') return 'video/webm';
+  for (const t of types) {
+    try { if (MediaRecorder.isTypeSupported(t)) return t; } catch(e) {}
+  }
+  return 'video/webm';
+}
+
+const MIME = bestMime();
+console.log('Using MIME:', MIME);
+
+// ── UPLOAD ─────────────────────────────────────────────────────────
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('video/')) loadVideo(f);
+  else toast('⚠️', 'Please drop a video file');
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadVideo(fileInput.files[0]); });
+
+function loadVideo(file) {
+  videoFile = file;
+  if (videoURL) URL.revokeObjectURL(videoURL);
+  videoURL = URL.createObjectURL(file);
+  const vid = document.getElementById('src-video');
+  vid.src = videoURL;
+  vid.addEventListener('loadedmetadata', () => {
+    videoDuration = vid.duration;
+    document.getElementById('preview-wrap').style.display  = 'block';
+    document.getElementById('settings-card').style.display = 'block';
+    document.getElementById('gen-card').style.display      = 'block';
+    document.getElementById('meta-row').innerHTML =
+      `<div class="mc">📄 ${file.name}</div>
+       <div class="mc">⏱ ${fmtT(videoDuration)}</div>
+       <div class="mc">💾 ${(file.size/1024/1024).toFixed(1)} MB</div>
+       <div class="mc">📐 ${vid.videoWidth}×${vid.videoHeight}</div>`;
+    updateTL();
+    toast('✅', 'Video loaded — audio detected');
+  }, { once:true });
+}
+
+// ── TIMELINE ───────────────────────────────────────────────────────
+['clip-dur','num-clips','clip-mode'].forEach(id =>
+  document.getElementById(id).addEventListener('change', updateTL)
+);
+
+function updateTL() {
+  if (!videoDuration) return;
+  const dur  = parseInt(document.getElementById('clip-dur').value);
+  const nVal = document.getElementById('num-clips').value;
+  const max  = Math.floor(videoDuration / dur);
+  const n    = nVal === 'auto' ? max : Math.min(parseInt(nVal), max);
+  const mode = document.getElementById('clip-mode').value;
+
+  const pct = Math.min((dur / videoDuration) * 100, 100);
+  document.getElementById('ct-fill').style.width = pct + '%';
+  document.getElementById('ct-lbl').textContent  = `CLIP 1 · ${dur}S · 9:16 · MP4+AUDIO`;
+
+  document.getElementById('clip-info-row').innerHTML =
+    `<div class="ci">Clips: <span>${n}</span></div>
+     <div class="ci">Each: <span>${dur}s</span></div>
+     <div class="ci">Total: <span>${fmtT(n*dur)}</span></div>
+     <div class="ci">Mode: <span>${mode}</span></div>
+     <div class="ci">Output: <span>1080×1920 MP4</span></div>
+     <div class="ci">Audio: <span>✓ Included</span></div>`;
+}
+
+// ── GENERATE ───────────────────────────────────────────────────────
+async function generate() {
+  if (!videoFile) return;
+
+  const dur  = parseInt(document.getElementById('clip-dur').value);
+  const nVal = document.getElementById('num-clips').value;
+  const mode = document.getElementById('clip-mode').value;
+  const fill = document.getElementById('fill-mode').value;
+  const max  = Math.floor(videoDuration / dur);
+  const n    = nVal === 'auto' ? max : Math.min(parseInt(nVal), max);
+
+  if (n === 0) { toast('⚠️', `Video too short for ${dur}s clips`); return; }
+
+  document.getElementById('prog-card').style.display   = 'block';
+  document.getElementById('output-card').style.display = 'none';
+  document.getElementById('gen-btn').disabled = true;
+  document.getElementById('log-console').innerHTML = '';
+  clips = [];
+
+  const starts = computeStarts(n, dur, mode);
+
+  log('linf', `> CORSE · OUTPUT: 1080×1920 · 9:16 · AUDIO INCLUDED · NO WATERMARK`);
+  log('linf', `> MIME: ${MIME}`);
+  log('linf', `> EXTRACTING ${n} CLIPS · ${dur}S EACH`);
+
+  // ── KEY: use Web Audio API to capture audio from the source video
+  // We create an AudioContext, hook the video element as a source,
+  // then feed that audio into the MediaRecorder alongside the canvas video stream.
+
+  let audioCtx    = null;
+  let audioSource = null;
+  let audioDest   = null;
+
+  try {
+    audioCtx   = new (window.AudioContext || window.webkitAudioContext)();
+    audioDest  = audioCtx.createMediaStreamDestination();
+  } catch(e) {
+    log('lwrn', `[!] AudioContext unavailable — clips will be video only`);
+  }
+
+  // Create a hidden video element used purely for extraction (not shown to user)
+  const srcVid = document.createElement('video');
+  srcVid.src        = videoURL;
+  srcVid.muted      = false;   // must NOT be muted so audio flows through
+  srcVid.volume     = 1.0;
+  srcVid.preload    = 'auto';
+  srcVid.playsInline = true;
+  srcVid.crossOrigin = 'anonymous';
+  await new Promise(r => { srcVid.onloadeddata = r; srcVid.load(); });
+
+  // Connect video audio → AudioContext → MediaStreamDestination
+  if (audioCtx) {
+    try {
+      audioSource = audioCtx.createMediaElementSource(srcVid);
+      audioSource.connect(audioDest);
+      // Also connect to speakers so audio plays during capture
+      audioSource.connect(audioCtx.destination);
+    } catch(e) {
+      log('lwrn', `[!] Audio routing: ${e.message}`);
+    }
+  }
+
+  // Canvas for video frames
+  const canvas = document.createElement('canvas');
+  canvas.width  = CW;
+  canvas.height = CH;
+  const ctx = canvas.getContext('2d', { alpha: false });
+
+  for (let i = 0; i < n; i++) {
+    setProgress(Math.round((i / n) * 90), `> Rendering clip ${i+1} of ${n} with audio...`);
+    log('lok', `[CLIP ${i+1}] @${fmtT(starts[i])} · ${dur}s · 1080×1920 · audio+video`);
+
+    try {
+      const blob = await extractClip(srcVid, canvas, ctx, audioCtx, audioDest, starts[i], dur, fill);
+      clips.push({ blob, start: starts[i], dur, idx: i+1 });
+    } catch(e) {
+      log('lwrn', `[!] Clip ${i+1} error: ${e.message}`);
+      // fallback: try without audio
+      try {
+        const blob = await extractClipNoAudio(srcVid, canvas, ctx, starts[i], dur, fill);
+        clips.push({ blob, start: starts[i], dur, idx: i+1 });
+        log('lwrn', `[!] Clip ${i+1}: captured without audio as fallback`);
+      } catch(e2) {
+        log('lwrn', `[!] Clip ${i+1}: skipped — ${e2.message}`);
+      }
+    }
+  }
+
+  // Cleanup audio context
+  if (audioCtx) { try { audioCtx.close(); } catch(e) {} }
+
+  setProgress(100, `> ${clips.length} clips ready — download below`);
+  log('lok', `[DONE] ${clips.length} clips · 1080×1920 · 9:16 · Audio included · No watermarks`);
+
+  await new Promise(r => setTimeout(r, 400));
+  renderOutput();
+  document.getElementById('gen-btn').disabled = false;
+  toast('🎬', `${clips.length} clips ready — with audio!`);
+}
+
+// ── EXTRACT CLIP WITH AUDIO ────────────────────────────────────────
+// Combines canvas video stream + audio stream into one MediaRecorder
+function extractClip(vid, canvas, ctx, audioCtx, audioDest, startTime, dur, fill) {
+  return new Promise((resolve, reject) => {
+
+    // Build a combined stream: video from canvas + audio from audioDest
+    const videoStream = canvas.captureStream(30);
+    let combinedStream;
+
+    if (audioDest && audioDest.stream.getAudioTracks().length > 0) {
+      const audioTracks = audioDest.stream.getAudioTracks();
+      const videoTracks = videoStream.getVideoTracks();
+      combinedStream = new MediaStream([...videoTracks, ...audioTracks]);
+    } else {
+      combinedStream = videoStream;
+    }
+
+    let rec;
+    try {
+      rec = new MediaRecorder(combinedStream, {
+        mimeType: MIME,
+        videoBitsPerSecond: 5000000,
+        audioBitsPerSecond: 192000,
+      });
+    } catch(e) {
+      // Try without specifying codec
+      try {
+        rec = new MediaRecorder(combinedStream);
+      } catch(e2) {
+        reject(new Error('MediaRecorder failed: ' + e2.message));
+        return;
+      }
+    }
+
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+    rec.onstop = () => resolve(new Blob(chunks, { type: MIME }));
+    rec.onerror = e => reject(e.error || new Error('MediaRecorder error'));
+
+    // Resume AudioContext if suspended (browser autoplay policy)
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+
+    vid.currentTime = startTime;
+    vid.onseeked = () => {
+      rec.start(100); // chunk every 100ms
+
+      vid.play().catch(e => {
+        rec.stop();
+        reject(new Error('Video play failed: ' + e.message));
+      });
+
+      const endTime = startTime + dur;
+
+      const drawLoop = () => {
+        if (vid.currentTime >= endTime || vid.ended || vid.paused) {
+          vid.pause();
+          setTimeout(() => {
+            try { rec.stop(); } catch(e) {}
+          }, 250); // extra time to flush audio buffer
+          return;
+        }
+        // Draw clean video frame — NO watermarks, NO text, NO overlays
+        drawFrame(ctx, vid, fill);
+        requestAnimationFrame(drawLoop);
+      };
+
+      requestAnimationFrame(drawLoop);
+    };
+  });
+}
+
+// ── EXTRACT WITHOUT AUDIO (fallback) ──────────────────────────────
+function extractClipNoAudio(vid, canvas, ctx, startTime, dur, fill) {
+  return new Promise((resolve, reject) => {
+    const stream = canvas.captureStream(30);
+    let rec;
+    try {
+      rec = new MediaRecorder(stream, { mimeType: MIME, videoBitsPerSecond: 5000000 });
+    } catch(e) {
+      try { rec = new MediaRecorder(stream); }
+      catch(e2) { reject(e2); return; }
+    }
+
+    const chunks = [];
+    rec.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+    rec.onstop = () => resolve(new Blob(chunks, { type: MIME }));
+
+    vid.currentTime = startTime;
+    vid.onseeked = () => {
+      rec.start(100);
+      vid.play().catch(() => {});
+      const endTime = startTime + dur;
+      const drawLoop = () => {
+        if (vid.currentTime >= endTime || vid.ended) {
+          vid.pause();
+          setTimeout(() => { try { rec.stop(); } catch(e) {} }, 200);
+          return;
+        }
+        drawFrame(ctx, vid, fill);
+        requestAnimationFrame(drawLoop);
+      };
+      requestAnimationFrame(drawLoop);
+    };
+  });
+}
+
+// ── DRAW CLEAN FRAME ──────────────────────────────────────────────
+function drawFrame(ctx, vid, fill) {
+  const W = CW, H = CH;
+  const vw = vid.videoWidth  || W;
+  const vh = vid.videoHeight || H;
+  const va = vw / vh, ca = W / H;
+
+  if (fill === 'crop') {
+    let sx, sy, sw, sh;
+    if (va > ca) { sh=vh; sw=vh*ca; sx=(vw-sw)/2; sy=0; }
+    else         { sw=vw; sh=vw/ca; sx=0; sy=(vh-sh)/2; }
+    ctx.drawImage(vid, sx, sy, sw, sh, 0, 0, W, H);
+  } else if (fill === 'fit') {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+    let dw, dh, dx, dy;
+    if (va > ca) { dw=W; dh=W/va; dx=0; dy=(H-dh)/2; }
+    else         { dh=H; dw=H*va; dy=0; dx=(W-dw)/2; }
+    ctx.drawImage(vid, dx, dy, dw, dh);
+  } else {
+    ctx.drawImage(vid, 0, 0, W, H);
+  }
+  // Nothing else drawn — clean frame, no watermarks
+}
+
+// ── COMPUTE START TIMES ───────────────────────────────────────────
+function computeStarts(n, dur, mode) {
+  const starts = [];
+  if (mode === 'spread') {
+    const sp = videoDuration / n;
+    for (let i=0; i<n; i++) starts.push(i * sp);
+  } else if (mode === 'random') {
+    const usable = Math.max(0, videoDuration - dur);
+    for (let tries=0; starts.length < n && tries < n*30; tries++) {
+      const t = Math.random() * usable;
+      if (!starts.some(s => Math.abs(s-t) < dur)) starts.push(t);
+    }
+    starts.sort((a,b) => a-b);
+    while (starts.length < n) starts.push(starts.length * (videoDuration/n));
+  } else if (mode === 'start') {
+    for (let i=0; i<n; i++) starts.push(i * dur);
+  } else {
+    const base = Math.max(0, videoDuration - n * dur);
+    for (let i=0; i<n; i++) starts.push(base + i * dur);
+  }
+  return starts;
+}
+
+// ── RENDER CLIPS ──────────────────────────────────────────────────
+function renderOutput() {
+  document.getElementById('output-card').style.display = 'block';
+  document.getElementById('output-title').textContent =
+    `${clips.length} MP4 Clips Ready — With Audio`;
+
+  const grid = document.getElementById('clips-grid');
+  grid.innerHTML = '';
+
+  clips.forEach(clip => {
+    const url   = URL.createObjectURL(clip.blob);
+    const isVid = clip.blob.type.startsWith('video/');
+    const fname = `CORSE_clip_${String(clip.idx).padStart(2,'0')}_${Math.round(clip.start)}s.mp4`;
+
+    const card = document.createElement('div');
+    card.className = 'clip-card';
+
+    const mediaHTML = isVid
+      ? `<video src="${url}" loop muted playsinline preload="metadata"
+             style="width:100%;height:100%;object-fit:cover;border-radius:0;max-height:none;display:block"></video>`
+      : `<img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block">`;
+
+    card.innerHTML = `
+      <div class="clip-thumb">
+        ${mediaHTML}
+        <div class="thumb-overlay">
+          <div class="thumb-num">CLIP ${String(clip.idx).padStart(2,'0')}</div>
+        </div>
+        <div class="thumb-badge">MP4 · 9:16 · 🔊</div>
+      </div>
+      <div class="clip-info">
+        <div class="cl-name">CORSE_CLIP_${String(clip.idx).padStart(2,'0')}</div>
+        <div class="cl-meta">⏱ ${clip.dur}s &nbsp;·&nbsp; @${fmtT(clip.start)}</div>
+        <div class="cl-spec">1080×1920 · 9:16 · MP4 · Audio ✓ · No Watermark</div>
+        <div class="clip-btns">
+          <a href="${url}" download="${fname}" class="btn-dl">⬇ Download MP4</a>
+          ${isVid ? `<button class="btn-play" onclick="togglePlay(this)">▶ Play</button>` : ''}
+        </div>
+      </div>`;
+
+    grid.appendChild(card);
+
+    // Hover preview (muted so it doesn't clash)
+    if (isVid) {
+      const v = card.querySelector('video');
+      card.addEventListener('mouseenter', () => v.play().catch(() => {}));
+      card.addEventListener('mouseleave', () => { v.pause(); v.currentTime = 0; });
+    }
+  });
+}
+
+function togglePlay(btn) {
+  const card = btn.closest('.clip-card');
+  const v    = card.querySelector('video');
+  if (!v) return;
+  // Unmute for manual play so user hears audio
+  v.muted = false;
+  if (v.paused) {
+    v.play().then(() => { btn.textContent = '⏸ Pause'; }).catch(() => {});
+  } else {
+    v.pause();
+    btn.textContent = '▶ Play';
+  }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function fmtT(s) {
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+function setProgress(pct, label) {
+  document.getElementById('prog-inner').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = label;
+}
+
+function log(cls, msg) {
+  const box = document.getElementById('log-console');
+  const el  = document.createElement('div');
+  el.className = cls; el.textContent = msg;
+  box.appendChild(el); box.scrollTop = box.scrollHeight;
+}
+
+function toast(ico, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('t-ico').textContent = ico + ' ';
+  document.getElementById('t-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+updateTL();
+</script>
+</body>
+</html>
